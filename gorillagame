@@ -405,6 +405,275 @@ body::before {
     .upg-mid { flex-direction: row; }
     .pvp-preview { grid-template-columns: 1fr; gap: 10px; }
 }
+
+<div id="auth-overlay" class="hidden">
+    <div class="auth-box">
+        <h1>🦍 GorillaGame</h1>
+        <p class="auth-sub">Вход только с @username WinterGram</p>
+        <div class="auth-tabs">
+            <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">🔑 Войти</button>
+            <button class="auth-tab" id="tab-register" onclick="switchTab('register')">✨ Регистрация</button>
+        </div>
+        <div id="form-login">
+            <div class="auth-field">
+                <label>@username (WinterGram)</label>
+                <input type="text" id="login-username" placeholder="например winter123" autocomplete="username">
+                <div class="auth-hint" id="login-username-hint">Только латиница, минимум 5 символов</div>
+            </div>
+            <div class="auth-field">
+                <label>Пароль</label>
+                <input type="password" id="login-password" placeholder="Твой пароль" autocomplete="current-password">
+            </div>
+            <div class="auth-error" id="login-error"></div>
+            <button class="auth-btn" onclick="doLogin()">🔑 Войти</button>
+        </div>
+        <div id="form-register" class="hidden">
+            <div class="auth-field">
+                <label>@username WinterGram</label>
+                <input type="text" id="reg-username" placeholder="например winter123" autocomplete="username">
+                <div class="auth-hint" id="reg-username-hint">Только латиница (a-z), цифры, _, минимум 5 символов</div>
+            </div>
+            <div class="auth-field">
+                <label>Имя (отображается в игре)</label>
+                <input type="text" id="reg-name" placeholder="Как тебя звать?" maxlength="20">
+            </div>
+            <div class="auth-field">
+                <label>Пароль</label>
+                <input type="password" id="reg-password" placeholder="Минимум 6 символов" autocomplete="new-password">
+            </div>
+            <div class="auth-field">
+                <label>Повтори пароль</label>
+                <input type="password" id="reg-password2" placeholder="Ещё раз" autocomplete="new-password">
+            </div>
+            <div style="text-align:left;font-size:12px;opacity:0.7;margin-bottom:8px;padding-left:4px;">Роль:</div>
+            <div class="role-select">
+                <div class="role-option active" data-role="user" onclick="selectRole('user')">
+                    <div class="role-icon">👤</div><div class="role-name">Игрок</div>
+                </div>
+                <div class="role-option" data-role="admin" onclick="selectRole('admin')">
+                    <div class="role-icon">🛠</div><div class="role-name">Админ</div>
+                </div>
+            </div>
+            <div class="auth-field hidden" id="reg-admin-code-field">
+                <label>Код админа</label>
+                <input type="password" id="reg-admin-code" placeholder="Код админа">
+            </div>
+            <div class="auth-error" id="reg-error"></div>
+            <button class="auth-btn" onclick="doRegister()">✨ Создать аккаунт</button>
+        </div>
+    </div>
+</div>
+
+<div id="app" class="hidden">
+<header class="header">
+    <div class="logo">🦍 GorillaGame</div>
+    <div class="balance-box"><span id="balance">100</span> ⭐</div>
+</header>
+
+<div class="event-ticker">
+    <div class="event-ticker-track" id="event-track">
+        <span>🦍 Добро пожаловать в GorillaGame!</span>
+    </div>
+</div>
+
+<main class="container">
+    <div id="view-main">
+        <h1 class="title">Добро пожаловать в <span>GorillaGame</span></h1>
+        <p class="subtitle">Открывай кейсы, играй в Crash и выбивай NFT 🐒</p>
+        <div class="menu-grid">
+            <button class="menu-btn" onclick="showSection('cases')"><span class="icon">📦</span><span>Кейсы</span></button>
+            <button class="menu-btn" onclick="showSection('crash')"><span class="icon">🎮</span><span>Crash игра</span></button>
+            <button class="menu-btn" onclick="showSection('upgrade')"><span class="icon">⚡</span><span>Апгрейдер</span></button>
+            <button class="menu-btn" onclick="showSection('pvp')"><span class="icon">⚔️</span><span>Дуэли</span></button>
+            <button class="menu-btn" onclick="showSection('promo')"><span class="icon">🎟</span><span>Промокод</span></button>
+            <button class="menu-btn" onclick="showSection('profile')"><span class="icon">👤</span><span>Профиль</span></button>
+            <button class="menu-btn" onclick="showSection('deposit')"><span class="icon">💳</span><span>Пополнить</span></button>
+            <button class="menu-btn" onclick="showSection('withdraw')"><span class="icon">💸</span><span>Вывести</span></button>
+            <button class="menu-btn" onclick="showSection('inventory')"><span class="icon">🎒</span><span>Инвентарь</span></button>
+            <button class="menu-btn" onclick="openFreeCase()"><span class="icon">🎁</span><span>Бесплатный кейс</span></button>
+            <button class="menu-btn hidden" id="admin-menu-btn" onclick="showSection('admin')"><span class="icon">🛠</span><span>Админ-панель</span></button>
+        </div>
+    </div>
+
+    <section id="section-cases" class="section hidden">
+        <h2>📦 Выбери кейс</h2>
+        <div class="cases-grid" id="cases-grid"></div>
+        <button class="back-btn" onclick="showSection('main')">⬅️ Назад</button>
+    </section>
+
+    <section id="section-crash" class="section hidden">
+        <h2>🎮 Crash игра</h2>
+        <div class="crash-box">
+            <div class="multiplier" id="multiplier">1.00x</div>
+            <div class="crash-status" id="crash-status">Нажми Старт чтобы начать</div>
+        </div>
+        <div class="bet-selector" id="bet-selector">
+            <div class="bet-option" onclick="selectBet(10)">10 ⭐</div>
+            <div class="bet-option" onclick="selectBet(50)">50 ⭐</div>
+            <div class="bet-option active" onclick="selectBet(100)">100 ⭐</div>
+            <div class="bet-option" onclick="selectBet(500)">500 ⭐</div>
+            <div class="bet-option" onclick="selectBet(1000)">1000 ⭐</div>
+        </div>
+        <div class="crash-controls">
+            <button class="start-btn" id="start-btn" onclick="startCrash()">▶️ Старт</button>
+            <button class="stop-btn" id="stop-btn" onclick="stopCrash()" disabled>🛑 СТОП</button>
+        </div>
+        <p class="bet-info">Ставка: <b id="bet-display">100</b> ⭐</p>
+        <button class="back-btn" onclick="showSection('main')">⬅️ Назад</button>
+    </section>
+
+    <section id="section-upgrade" class="section hidden">
+        <h2>⚡ Апгрейдер NFT</h2>
+        <div class="upgrader-info">
+            Выбери <b>один или несколько NFT</b> слева. Выбери <b>цель</b> справа.<br>
+            Шанс: <b>сумма ставок ÷ цена цели</b>. Успех — получаешь цель. Провал — все ставки сгорают.
+        </div>
+        <div class="upg-row">
+            <div class="upg-col">
+                <h3>🎒 Твой NFT (ставка)</h3>
+                <div class="upg-items" id="upg-my-items"></div>
+            </div>
+            <div class="upg-mid">
+                <div class="upg-arrow">➡️</div>
+                <div class="upg-chance" id="upg-chance-display">Выбери NFT</div>
+            </div>
+            <div class="upg-col">
+                <h3>🎯 Цель</h3>
+                <div class="upg-items" id="upg-target-items"></div>
+            </div>
+        </div>
+        <div class="upg-stake-info" id="upg-stake-info"></div>
+        <div class="upg-result-box" id="upg-result-box">Выбери NFT слева и цель справа</div>
+        <button class="upgrade-btn" id="upgrade-btn" onclick="doUpgrade()" disabled>⚡ Апгрейд</button>
+        <button class="back-btn" onclick="showSection('main')">⬅️ Назад</button>
+    </section>
+
+    <section id="section-pvp" class="section hidden">
+        <h2>⚔️ PvP Дуэли</h2>
+        <div class="upgrader-info">
+            Выбери <b>противника</b> и <b>свою ставку</b> (можно несколько NFT).<br>
+            Победитель определяется случайно (50/50) и забирает <b>все NFT из ставки</b>.
+        </div>
+        <h3 style="font-size:14px;margin-bottom:10px;opacity:0.8;">🎯 Выбери противника:</h3>
+        <div class="pvp-players" id="pvp-players"></div>
+        <div id="pvp-battle-area" class="hidden">
+            <div class="pvp-preview">
+                <div class="pvp-side">
+                    <h4>Твоя ставка</h4>
+                    <div id="pvp-my-slot"><div class="pvp-empty">— не выбрано —</div></div>
+                </div>
+                <div class="pvp-vs">VS</div>
+                <div class="pvp-side">
+                    <h4>Ставка противника</h4>
+                    <div id="pvp-enemy-slot"><div class="pvp-empty">— не выбрано —</div></div>
+                </div>
+            </div>
+            <h3 style="font-size:14px;margin-bottom:10px;opacity:0.8;">🎒 Твой NFT (можно несколько):</h3>
+            <div class="pvp-nft-picker" id="pvp-my-nfts"></div>
+            <button class="pvp-battle-btn" id="pvp-battle-btn" onclick="startPvpBattle()" disabled>⚔️ В БОЙ!</button>
+            <div class="pvp-result" id="pvp-result"></div>
+        </div>
+        <button class="back-btn" onclick="showSection('main')">⬅️ Назад</button>
+    </section>
+
+    <section id="section-promo" class="section hidden">
+        <h2>🎟 Промокод</h2>
+        <div class="info-card">
+            <p>Введи промокод и получи награду!</p>
+        </div>
+        <div class="promo-box">
+            <input type="text" id="promo-input" placeholder="ВВЕДИ ПРОМОКОД" maxlength="20">
+            <button class="promo-btn" onclick="activatePromo()">Активировать</button>
+        </div>
+        <button class="back-btn" onclick="showSection('main')">⬅️ Назад</button>
+    </section>
+
+    <section id="section-profile" class="section hidden">
+        <h2>👤 Мой профиль</h2>
+        <div class="profile-card">
+            <div class="profile-avatar" id="profile-avatar">🐒</div>
+            <div class="profile-name" id="profile-name">Игрок</div>
+            <div class="profile-username" id="profile-username">—</div>
+            <div class="profile-role role-user" id="profile-role">👤 Игрок</div>
+            <div class="profile-id" id="profile-id">ID: —</div>
+            <div class="stats-grid">
+                <div class="stat-box"><div class="value" id="stat-balance">0</div><div class="label">Баланс ⭐</div></div>
+                <div class="stat-box"><div class="value" id="stat-nft">0</div><div class="label">NFT 🐒</div></div>
+                <div class="stat-box"><div class="value" id="stat-cases">0</div><div class="label">Кейсов</div></div>
+            </div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:20px;">
+            <button class="start-btn" onclick="showSection('deposit')">💳 Пополнить</button>
+            <button class="stop-btn" onclick="showSection('withdraw')">💸 Вывести</button>
+        </div>
+        <button class="logout-btn" onclick="logout()">🚪 Выйти из аккаунта</button>
+        <button class="back-btn" onclick="showSection('main')">⬅️ Назад</button>
+    </section>
+
+    <section id="section-deposit" class="section hidden">
+        <h2>💳 Пополнение баланса</h2>
+        <div class="info-card">
+            <p>За пополнением к <b>@GorillaGame</b><br>в кейсы от <b>200 🌟</b></p>
+            <a href="https://t.me/GorillaGame" class="tg-link" target="_blank">Перейти в @GorillaGame</a>
+        </div>
+        <button class="back-btn" onclick="showSection('main')">⬅️ Назад</button>
+    </section>
+
+    <section id="section-withdraw" class="section hidden">
+        <h2>💸 Вывод средств</h2>
+        <div class="info-card">
+            <p>За выводом к <b>@GorillaGame</b></p>
+            <a href="https://t.me/GorillaGame" class="tg-link" target="_blank">Перейти в @GorillaGame</a>
+        </div>
+        <button class="back-btn" onclick="showSection('main')">⬅️ Назад</button>
+    </section>
+
+    <section id="section-inventory" class="section hidden">
+        <h2>🎒 Мой инвентарь</h2>
+        <div id="inventory-list" class="inventory-list">
+            <p class="empty">Инвентарь пуст. Открывай кейсы!</p>
+        </div>
+        <button class="back-btn" onclick="showSection('main')">⬅️ Назад</button>
+    </section>
+
+    <section id="section-admin" class="section hidden">
+        <h2>🛠 Админ-панель</h2>
+        <div class="admin-stats">
+            <div class="admin-stat"><div class="num" id="admin-total">0</div><div class="lbl">Игроков</div></div>
+            <div class="admin-stat"><div class="num" id="admin-stars">0</div><div class="lbl">Звёзд</div></div>
+            <div class="admin-stat"><div class="num" id="admin-nfts">0</div><div class="lbl">NFT</div></div>
+        </div>
+
+        <h3 style="font-size:14px;margin:15px 0 10px;color:#ff8a00;">🎚 Подкрутка шансов кейсов</h3>
+        <div id="luck-controls" style="margin-bottom:20px;"></div>
+
+        <h3 style="font-size:14px;margin:15px 0 10px;color:#ff8a00;">🎟 Создать промокод</h3>
+        <div class="admin-input">
+            <input type="text" id="promo-new-code" placeholder="КОД (латиница, цифры)" maxlength="20" style="margin-bottom:8px;">
+            <input type="number" id="promo-new-stars" placeholder="Звёзды (например 500)" style="margin-bottom:8px;">
+            <input type="text" id="promo-new-nft" placeholder="NFT (необязательно, точное имя)">
+            <button class="promo-btn" style="width:100%;margin-top:8px;" onclick="createPromo()">➕ Создать промокод</button>
+        </div>
+        <div id="admin-promos" style="margin-bottom:20px;"></div>
+
+        <h3 style="font-size:14px;margin:15px 0 10px;color:#ff8a00;">👥 Игроки</h3>
+        <div class="admin-input">
+            <input type="text" id="admin-search" placeholder="Поиск..." oninput="renderAdminUsers()">
+        </div>
+        <div id="admin-users"></div>
+        <button class="back-btn" onclick="showSection('main')">⬅️ Назад</button>
+    </section>
+</main>
+</div>
+
+<div id="result-modal" class="modal hidden">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <h2 id="result-title">Результат</h2>
+        <div id="result-image"></div>
+        <p id="result-text"></p>
+        <button type="button" class="close-btn" id="modal-close-btn">Закрыть</button>
+    </div>
+</div>
 </style>
 </head>
 <body>                              
