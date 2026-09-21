@@ -676,4 +676,509 @@ body::before {
 </div>
 </style>
 </head>
+
+<script>
+/* ================== НАСТРОЙКИ ================== */
+const ADMIN_CODE = 'gorilla2024';
+const START_BALANCE = 100;
+const tg = window.Telegram?.WebApp;
+if (tg) { tg.expand(); tg.ready(); }
+
+/* ================== КАРТИНКИ NFT ================== */
+const NFT_IMAGES = {
+    'NFT Сердце 💌': 'https://em-content.zobj.net/source/apple/391/love-letter_1f48c.png',
+    'NFT Палец вверх 👍': 'https://em-content.zobj.net/source/apple/391/thumbs-up_1f44d.png',
+    'NFT Цветы 💐': 'https://em-content.zobj.net/source/apple/391/bouquet_1f490.png',
+    'NFT Домашний торт 🎂': 'https://em-content.zobj.net/source/apple/391/birthday-cake_1f382.png',
+    'NFT Желейный зайчик 🐰': 'https://em-content.zobj.net/source/apple/391/rabbit-face_1f430.png',
+    'NFT Пряное вино 🍷': 'https://em-content.zobj.net/source/apple/391/wine-glass_1f377-fe0f.png',
+    'NFT Шапка Санты 🎅': 'https://em-content.zobj.net/source/apple/391/santa-claus_1f385.png',
+    'NFT Змея 🐍': 'https://em-content.zobj.net/source/apple/391/snake_1f40d.png',
+    'NFT Надувной круг 🛟': 'https://em-content.zobj.net/source/apple/391/ring-buoy_1f6df.png',
+    'NFT Астральный осколок ✨': 'https://em-content.zobj.net/source/apple/391/sparkles_2728.png',
+    'NFT Бриллиантовая корона 👑': 'https://em-content.zobj.net/source/apple/391/crown_1f451.png',
+    'NFT Плюшевый Пепе 🐸': 'https://em-content.zobj.net/source/apple/391/frog_1f438.png',
+    'NFT Кепка Дурова 🧢': 'https://em-content.zobj.net/source/apple/391/billed-cap_1f9e2.png',
+    'NFT Папаха Хабиба 🎩': 'https://em-content.zobj.net/source/apple/391/top-hat_1f3a9.png',
+    'NFT Желейная лягушка 🍬': 'https://em-content.zobj.net/source/apple/391/candy_1f36c.png',
+    'NFT Платина ⚪': 'https://em-content.zobj.net/source/apple/391/white-circle_26aa.png',
+    'NFT Кольцо 💍': 'https://em-content.zobj.net/source/apple/391/ring_1f48d.png',
+    'NFT Снуп Догг 🐶': 'https://em-content.zobj.net/source/apple/391/dog-face_1f436.png',
+    'NFT Бриллиантовое кольцо 💎': 'https://em-content.zobj.net/source/apple/391/gem-stone_1f48e.png',
+    'NFT Сердечный медальон 💖': 'https://em-content.zobj.net/source/apple/391/sparkling-heart_1f496.png',
+    'NFT Хрустальный шар 🔮': 'https://em-content.zobj.net/source/apple/391/crystal-ball_1f52e.png',
+    'NFT Золотой ключ 🗝️': 'https://em-content.zobj.net/source/apple/391/old-key_1f5dd-fe0f.png',
+    'NFT Кристалл TON 💠': 'https://em-content.zobj.net/source/apple/391/diamond-with-a-dot_1f4a0.png',
+    'NFT Кибер-сова 🦉': 'https://em-content.zobj.net/source/apple/391/owl_1f989.png',
+    'NFT Неоновое сердце 💗': 'https://em-content.zobj.net/source/apple/391/growing-heart_1f497.png',
+    'NFT Космический кот 🐱': 'https://em-content.zobj.net/source/apple/391/cat-face_1f431.png',
+    'NFT Огненный череп 💀': 'https://em-content.zobj.net/source/apple/391/skull_1f480.png',
+    'NFT Радужный единорог 🦄': 'https://em-content.zobj.net/source/apple/391/unicorn_1f984.png'
+};
+
+function getNftImage(name) { return NFT_IMAGES[name] || ''; }
+
+/* ================== КЕЙСЫ (8 штук) ================== */
+const CASES = {
+    bronze: {
+        name: '🟢 Бронза', price: 100,
+        img: '🟫', cls: 'bronze',
+        rewards: [
+            { name: '0 ⭐', chance: 30, value: 0, nft: false },
+            { name: '30 ⭐', chance: 30, value: 30, nft: false },
+            { name: '60 ⭐', chance: 25, value: 60, nft: false },
+            { name: '100 ⭐', chance: 10, value: 100, nft: false },
+            { name: 'NFT Сердце 💌', chance: 5, value: 0, nft: true }
+        ]
+    },
+    silver: {
+        name: '⚪ Серебро', price: 300,
+        img: '⬜', cls: 'silver',
+        rewards: [
+            { name: '0 ⭐', chance: 25, value: 0, nft: false },
+            { name: '100 ⭐', chance: 30, value: 100, nft: false },
+            { name: '200 ⭐', chance: 25, value: 200, nft: false },
+            { name: '300 ⭐', chance: 12, value: 300, nft: false },
+            { name: 'NFT Змея 🐍', chance: 8, value: 0, nft: true }
+        ]
+    },
+    gold: {
+        name: '🟡 Золото', price: 700,
+        img: '🟨', cls: 'gold',
+        rewards: [
+            { name: '0 ⭐', chance: 20, value: 0, nft: false },
+            { name: '300 ⭐', chance: 30, value: 300, nft: false },
+            { name: '600 ⭐', chance: 25, value: 600, nft: false },
+            { name: '900 ⭐', chance: 13, value: 900, nft: false },
+            { name: 'NFT Плюшевый Пепе 🐸', chance: 12, value: 0, nft: true }
+        ]
+    },
+    diamond: {
+        name: '💎 Алмаз', price: 2000,
+        img: '💎', cls: 'diamond',
+        rewards: [
+            { name: '0 ⭐', chance: 15, value: 0, nft: false },
+            { name: '800 ⭐', chance: 30, value: 800, nft: false },
+            { name: '1500 ⭐', chance: 25, value: 1500, nft: false },
+            { name: '2500 ⭐', chance: 15, value: 2500, nft: false },
+            { name: 'NFT Кепка Дурова 🧢', chance: 15, value: 0, nft: true }
+        ]
+    },
+    snoop: {
+        name: '🌿 Снуп Догг', price: 5000,
+        img: '🐶', cls: 'snoop',
+        rewards: [
+            { name: '0 ⭐', chance: 10, value: 0, nft: false },
+            { name: '2000 ⭐', chance: 30, value: 2000, nft: false },
+            { name: '4000 ⭐', chance: 25, value: 4000, nft: false },
+            { name: '6000 ⭐', chance: 20, value: 6000, nft: false },
+            { name: 'NFT Снуп Догг 🐶', chance: 15, value: 0, nft: true }
+        ]
+    },
+    khabib: {
+        name: '🔥 Хабиб', price: 10000,
+        img: '🎩', cls: 'khabib',
+        rewards: [
+            { name: '0 ⭐', chance: 10, value: 0, nft: false },
+            { name: '5000 ⭐', chance: 30, value: 5000, nft: false },
+            { name: '8000 ⭐', chance: 25, value: 8000, nft: false },
+            { name: '12000 ⭐', chance: 20, value: 12000, nft: false },
+            { name: 'NFT Папаха Хабиба 🎩', chance: 15, value: 0, nft: true }
+        ]
+    },
+    durov: {
+        name: '🧢 Дуров', price: 25000,
+        img: '🧢', cls: 'durov',
+        rewards: [
+            { name: '0 ⭐', chance: 8, value: 0, nft: false },
+            { name: '10000 ⭐', chance: 30, value: 10000, nft: false },
+            { name: '20000 ⭐', chance: 27, value: 20000, nft: false },
+            { name: '30000 ⭐', chance: 20, value: 30000, nft: false },
+            { name: 'NFT Золотой ключ 🗝️', chance: 15, value: 0, nft: true }
+        ]
+    },
+    legendary: {
+        name: '👑 Легендарный', price: 100000,
+        img: '👑', cls: 'legendary',
+        rewards: [
+            { name: '0 ⭐', chance: 5, value: 0, nft: false },
+            { name: '30000 ⭐', chance: 25, value: 30000, nft: false },
+            { name: '70000 ⭐', chance: 30, value: 70000, nft: false },
+            { name: '150000 ⭐', chance: 25, value: 150000, nft: false },
+            { name: 'NFT Кибер-сова 🦉', chance: 15, value: 0, nft: true }
+        ]
+    }
+};
+
+const FREE_REWARDS = [
+    { name: '10 ⭐', chance: 50, value: 10, nft: false },
+    { name: '30 ⭐', chance: 30, value: 30, nft: false },
+    { name: '50 ⭐', chance: 15, value: 50, nft: false },
+    { name: 'NFT Сердце 💌', chance: 5, value: 0, nft: true }
+];
+
+/* ================== ХРАНИЛИЩЕ ================== */
+const USERS_KEY = 'gorilla_users';
+const CURRENT_KEY = 'gorilla_current';
+const EVENTS_KEY = 'gorilla_events';
+const PROMOS_KEY = 'gorilla_promos';
+const LUCK_KEY = 'gorilla_luck';
+
+function getAllUsers() {
+    try { return JSON.parse(localStorage.getItem(USERS_KEY)) || {}; }
+    catch(e) { return {}; }
+}
+function saveAllUsers(u) { localStorage.setItem(USERS_KEY, JSON.stringify(u)); }
+
+function getEvents() {
+    try { return JSON.parse(localStorage.getItem(EVENTS_KEY)) || []; }
+    catch(e) { return []; }
+}
+function saveEvents(list) { localStorage.setItem(EVENTS_KEY, JSON.stringify(list.slice(-30))); }
+function addEvent(text) {
+    const events = getEvents();
+    events.push({ text: text, time: Date.now() });
+    saveEvents(events);
+    renderEvents();
+}
+function renderEvents() {
+    const events = getEvents();
+    const track = document.getElementById('event-track');
+    if (!track) return;
+    let list = events.slice().reverse();
+    if (!list.length) list = [{ text: '🦍 Добро пожаловать в GorillaGame!' }];
+    track.innerHTML = list.map(e => `<span>${escapeHtml(e.text)}</span>`).join('');
+}
+
+function getPromos() {
+    try { return JSON.parse(localStorage.getItem(PROMOS_KEY)) || {}; }
+    catch(e) { return {}; }
+}
+function savePromos(p) { localStorage.setItem(PROMOS_KEY, JSON.stringify(p)); }
+
+function getLuck() {
+    try { return JSON.parse(localStorage.getItem(LUCK_KEY)) || {}; }
+    catch(e) { return {}; }
+}
+function saveLuck(l) { localStorage.setItem(LUCK_KEY, JSON.stringify(l)); }
+
+function hashPassword(pwd) {
+    let h = 5381;
+    const salt = 'gorilla_salt_v1';
+    const str = salt + pwd + salt;
+    for (let i = 0; i < str.length; i++) {
+        h = ((h << 5) + h) + str.charCodeAt(i);
+        h = h | 0;
+    }
+    return 'h_' + Math.abs(h).toString(36) + '_' + str.length;
+}
+
+function validateUsername(u) {
+    if (!u) return 'Введи @username';
+    if (u.length < 5) return 'Минимум 5 символов';
+    if (u.length > 20) return 'Максимум 20 символов';
+    if (!/^[a-zA-Z0-9_]+$/.test(u)) return 'Только латиница, цифры и _';
+    if (!/[a-zA-Z]/.test(u)) return 'Должна быть хотя бы одна буква';
+    return null;
+}
+
+function findUserByUsername(username) {
+    const lower = username.toLowerCase();
+    const users = getAllUsers();
+    for (const id in users) {
+        if ((users[id].username || '').toLowerCase() === lower) return users[id];
+    }
+    return null;
+}
+
+/* ================== АВТОРИЗАЦИЯ ================== */
+function switchTab(tab) {
+    document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+    document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+    document.getElementById('form-login').classList.toggle('hidden', tab !== 'login');
+    document.getElementById('form-register').classList.toggle('hidden', tab !== 'register');
+    document.getElementById('login-error').classList.remove('show');
+    document.getElementById('reg-error').classList.remove('show');
+}
+
+let selectedRole = 'user';
+function selectRole(role) {
+    selectedRole = role;
+    document.querySelectorAll('.role-option').forEach(el => {
+        el.classList.toggle('active', el.dataset.role === role);
+    });
+    document.getElementById('reg-admin-code-field').classList.toggle('hidden', role !== 'admin');
+    if (role !== 'admin') document.getElementById('reg-admin-code').value = '';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const loginUser = document.getElementById('login-username');
+    const regUser = document.getElementById('reg-username');
+    if (loginUser) {
+        loginUser.addEventListener('input', () => {
+            const v = loginUser.value.trim();
+            const hint = document.getElementById('login-username-hint');
+            if (!v) { hint.textContent = 'Только латиница, минимум 5 символов'; hint.className = 'auth-hint'; return; }
+            const err = validateUsername(v);
+            if (err) { hint.textContent = '❌ ' + err; hint.className = 'auth-hint error'; loginUser.classList.add('invalid'); loginUser.classList.remove('valid'); }
+            else {
+                const existing = findUserByUsername(v);
+                if (!existing) { hint.textContent = '❌ Пользователь не найден'; hint.className = 'auth-hint error'; loginUser.classList.add('invalid'); loginUser.classList.remove('valid'); }
+                else { hint.textContent = '✅ Найден: ' + existing.name; hint.className = 'auth-hint ok'; loginUser.classList.add('valid'); loginUser.classList.remove('invalid'); }
+            }
+        });
+    }
+    if (regUser) {
+        regUser.addEventListener('input', () => {
+            const v = regUser.value.trim();
+            const hint = document.getElementById('reg-username-hint');
+            if (!v) { hint.textContent = 'Только латиница (a-z), цифры, _, минимум 5 символов'; hint.className = 'auth-hint'; regUser.classList.remove('invalid', 'valid'); return; }
+            const err = validateUsername(v);
+            if (err) { hint.textContent = '❌ ' + err; hint.className = 'auth-hint error'; regUser.classList.add('invalid'); regUser.classList.remove('valid'); }
+            else {
+                const existing = findUserByUsername(v);
+                if (existing) { hint.textContent = '❌ @' + v + ' уже занят'; hint.className = 'auth-hint error'; regUser.classList.add('invalid'); regUser.classList.remove('valid'); }
+                else { hint.textContent = '✅ @' + v + ' свободен'; hint.className = 'auth-hint ok'; regUser.classList.add('valid'); regUser.classList.remove('invalid'); }
+            }
+        });
+    }
+    document.getElementById('login-password')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') doLogin();
+    });
+});
+
+function doRegister() {
+    const username = document.getElementById('reg-username').value.trim();
+    const name = document.getElementById('reg-name').value.trim();
+    const pwd = document.getElementById('reg-password').value;
+    const pwd2 = document.getElementById('reg-password2').value;
+    const adminCode = document.getElementById('reg-admin-code').value.trim();
+    const err = document.getElementById('reg-error');
+    err.classList.remove('show');
+    const uErr = validateUsername(username);
+    if (uErr) { err.textContent = '❌ Username: ' + uErr; err.classList.add('show'); return; }
+    if (findUserByUsername(username)) { err.textContent = '❌ @' + username + ' уже занят'; err.classList.add('show'); return; }
+    if (!name || name.length < 2) { err.textContent = '❌ Введи имя (мин. 2 символа)'; err.classList.add('show'); return; }
+    if (pwd.length < 6) { err.textContent = '❌ Пароль минимум 6 символов'; err.classList.add('show'); return; }
+    if (pwd !== pwd2) { err.textContent = '❌ Пароли не совпадают'; err.classList.add('show'); return; }
+    if (selectedRole === 'admin' && adminCode !== ADMIN_CODE) { err.textContent = '❌ Неверный код админа'; err.classList.add('show'); return; }
+    const id = 'u_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+    const users = getAllUsers();
+    users[id] = {
+        id: id, username: username, name: name,
+        passwordHash: hashPassword(pwd), role: selectedRole,
+        balance: START_BALANCE, nft_inventory: [], last_free_case: null,
+        cases_opened: 0, blocked: false, created: Date.now(), photo_url: ''
+    };
+    saveAllUsers(users);
+    localStorage.setItem(CURRENT_KEY, id);
+    user = users[id];
+    addEvent(`🆕 ${name} зарегистрировался в игре!`);
+    document.getElementById('auth-overlay').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    initApp();
+}
+
+function doLogin() {
+    const username = document.getElementById('login-username').value.trim();
+    const pwd = document.getElementById('login-password').value;
+    const err = document.getElementById('login-error');
+    err.classList.remove('show');
+    const uErr = validateUsername(username);
+    if (uErr) { err.textContent = '❌ ' + uErr; err.classList.add('show'); return; }
+    if (!pwd) { err.textContent = '❌ Введи пароль'; err.classList.add('show'); return; }
+    const found = findUserByUsername(username);
+    if (!found) { err.textContent = '❌ Пользователь @' + username + ' не найден'; err.classList.add('show'); return; }
+    if (found.passwordHash !== hashPassword(pwd)) { err.textContent = '❌ Неверный пароль'; err.classList.add('show'); return; }
+    if (found.blocked) { err.textContent = '🚫 Аккаунт заблокирован админом'; err.classList.add('show'); return; }
+    localStorage.setItem(CURRENT_KEY, found.id);
+    user = found;
+    document.getElementById('auth-overlay').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    initApp();
+}
+
+function logout() {
+    if (!confirm('Выйти из аккаунта?')) return;
+    localStorage.removeItem(CURRENT_KEY);
+    location.reload();
+}
+
+let currentUserId = localStorage.getItem(CURRENT_KEY);
+let user = null;
+
+function saveUser() {
+    if (!user) return;
+    const users = getAllUsers();
+    users[user.id] = user;
+    saveAllUsers(users);
+    document.getElementById('balance').textContent = user.balance;
+    updateProfileUI();
+}
+
+/* ================== ПРОФИЛЬ ================== */
+function updateProfileUI() {
+    if (!user) return;
+    const nameEl = document.getElementById('profile-name');
+    if (!nameEl) return;
+    nameEl.textContent = user.name;
+    document.getElementById('profile-username').textContent = '@' + user.username;
+    document.getElementById('profile-id').textContent = 'ID: ' + user.id;
+    document.getElementById('stat-balance').textContent = user.balance;
+    document.getElementById('stat-nft').textContent = user.nft_inventory?.length || 0;
+    document.getElementById('stat-cases').textContent = user.cases_opened || 0;
+    const roleEl = document.getElementById('profile-role');
+    if (user.role === 'admin') {
+        roleEl.textContent = '🛠 Админ';
+        roleEl.className = 'profile-role role-admin';
+        document.getElementById('admin-menu-btn').classList.remove('hidden');
+    } else {
+        roleEl.textContent = '👤 Игрок';
+        roleEl.className = 'profile-role role-user';
+        document.getElementById('admin-menu-btn').classList.add('hidden');
+    }
+    const av = document.getElementById('profile-avatar');
+    if (user.photo_url) {
+        av.innerHTML = '<img src="' + user.photo_url + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" onerror="this.parentElement.textContent=\'🐒\'">';
+    } else {
+        av.textContent = '🐒';
+    }
+}
+
+/* ================== РЕНДЕР КЕЙСОВ ================== */
+function renderCases() {
+    const grid = document.getElementById('cases-grid');
+    if (!grid) return;
+    grid.innerHTML = Object.keys(CASES).map(key => {
+        const c = CASES[key];
+        return `<div class="case-card ${c.cls}" onclick="openCase('${key}')">
+            <div class="case-img">${c.img}</div>
+            <h3>${c.name}</h3>
+            <p>${c.price} ⭐</p>
+            <small>Топ NFT</small>
+        </div>`;
+    }).join('');
+}
+
+/* ================== ОТКРЫТИЕ КЕЙСА ================== */
+function rollReward(rewards, caseKey) {
+    const luck = getLuck();
+    const luckBonus = luck[caseKey] || 0;
+    const total = rewards.reduce((s, r) => s + r.chance, 0);
+    const r = Math.random() * total;
+    let upto = 0;
+    for (const rw of rewards) {
+        let chance = rw.chance;
+        if (rw.nft && luckBonus) chance = chance * (1 + luckBonus / 100);
+        upto += chance;
+        if (r <= upto) return rw;
+    }
+    return rewards[rewards.length - 1];
+}
+
+function openCase(caseKey) {
+    const c = CASES[caseKey];
+    if (!c) return;
+    if (user.balance < c.price) {
+        showModal('❌ Недостаточно средств', `Нужно ${c.price} ⭐\nУ тебя: ${user.balance} ⭐`);
+        return;
+    }
+    user.balance -= c.price;
+    user.cases_opened = (user.cases_opened || 0) + 1;
+    const reward = rollReward(c.rewards, caseKey);
+    if (reward.nft) {
+        user.nft_inventory.push(reward.name);
+        showModal('🎉 ТЫ ВЫБИЛ NFT!', reward.name, reward.name);
+        addEvent(`🎁 ${user.name} выбил ${reward.name}`);
+    } else {
+        user.balance += reward.value;
+        showModal('🎁 Выпало:', reward.name);
+    }
+    saveUser();
+    renderInventory();
+}
+
+function openFreeCase() {
+    const now = Date.now();
+    const DAY = 24 * 60 * 60 * 1000;
+    if (user.last_free_case && now - user.last_free_case < DAY) {
+        const remaining = DAY - (now - user.last_free_case);
+        const h = Math.floor(remaining / 3600000);
+        const m = Math.floor((remaining % 3600000) / 60000);
+        showModal('⏳ Подожди', `Следующий бесплатный кейс\nчерез ${h}ч ${m}мин`);
+        return;
+    }
+    user.last_free_case = now;
+    user.cases_opened = (user.cases_opened || 0) + 1;
+    const reward = rollReward(FREE_REWARDS, 'free');
+    if (reward.nft) {
+        user.nft_inventory.push(reward.name);
+        showModal('🎉 ТЫ ВЫБИЛ NFT!', reward.name, reward.name);
+        addEvent(`🎁 ${user.name} выбил ${reward.name} в бесплатном кейсе`);
+    } else {
+        user.balance += reward.value;
+        showModal('🎁 Бесплатный кейс:', reward.name);
+    }
+    saveUser();
+    renderInventory();
+}
+
+/* ================== CRASH ================== */
+let crashState = { playing: false, multiplier: 1.00, crashAt: 0, interval: null, bet: 100 };
+
+function selectBet(amount) {
+    if (crashState.playing) return;
+    crashState.bet = amount;
+    document.querySelectorAll('.bet-option').forEach(el => {
+        el.classList.toggle('active', parseInt(el.textContent) === amount);
+    });
+    document.getElementById('bet-display').textContent = amount;
+}
+
+function startCrash() {
+    if (crashState.playing) return;
+    if (user.balance < crashState.bet) {
+        showModal('❌ Недостаточно средств', `Нужно ${crashState.bet} ⭐`); return;
+    }
+    user.balance -= crashState.bet;
+    saveUser();
+    crashState.playing = true;
+    crashState.multiplier = 1.00;
+    crashState.crashAt = 1 + Math.random() * 9;
+    document.getElementById('start-btn').disabled = true;
+    document.getElementById('stop-btn').disabled = false;
+    document.getElementById('crash-status').textContent = 'Успей нажать СТОП!';
+    document.getElementById('multiplier').textContent = '1.00x';
+    crashState.interval = setInterval(() => {
+        crashState.multiplier += 0.1 + Math.random() * 0.3;
+        document.getElementById('multiplier').textContent = crashState.multiplier.toFixed(2) + 'x';
+        if (crashState.multiplier >= crashState.crashAt) crash();
+    }, 400);
+}
+
+function stopCrash() {
+    if (!crashState.playing) return;
+    clearInterval(crashState.interval);
+    crashState.playing = false;
+    const win = Math.floor(crashState.bet * crashState.multiplier);
+    user.balance += win;
+    saveUser();
+    document.getElementById('start-btn').disabled = false;
+    document.getElementById('stop-btn').disabled = true;
+    document.getElementById('crash-status').textContent = `✅ Выигрыш: +${win} ⭐`;
+    showModal('✅ Ты остановился!', `Множитель: ${crashState.multiplier.toFixed(2)}x\nВыигрыш: +${win} ⭐`);
+    addEvent(`🎮 ${user.name} выиграл ${win} ⭐ в краше (x${crashState.multiplier.toFixed(2)})`);
+}
+
+function crash() {
+    clearInterval(crashState.interval);
+    crashState.playing = false;
+    document.getElementById('start-btn').disabled = false;
+    document.getElementById('stop-btn').disabled = true;
+    document.getElementById('multiplier').textContent = crashState.crashAt.toFixed(2) + 'x 💥';
+    document.getElementById('crash-status').textContent = 'КРАШ! Попробуй ещё раз';
+    showModal('💥 КРАШ!', `Ты потерял ${crashState.bet} ⭐\nКраш на ${crashState.crashAt.toFixed(2)}x`);
+    addEvent(`💥 ${user.name} потерял ${crashState.bet} ⭐ в краше`);
+}
+
 <body>                              
