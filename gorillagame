@@ -1181,4 +1181,623 @@ function crash() {
     addEvent(`💥 ${user.name} потерял ${crashState.bet} ⭐ в краше`);
 }
 
+/* ================== АПГРЕЙДЕР ================== */
+const NFT_TIERS = {
+    'NFT Сердце 💌': { tier: 1, price: 100 },
+    'NFT Палец вверх 👍': { tier: 1, price: 110 },
+    'NFT Цветы 💐': { tier: 1, price: 120 },
+    'NFT Домашний торт 🎂': { tier: 1, price: 130 },
+    'NFT Желейный зайчик 🐰': { tier: 1, price: 140 },
+    'NFT Пряное вино 🍷': { tier: 1, price: 150 },
+    'NFT Шапка Санты 🎅': { tier: 1, price: 160 },
+    'NFT Змея 🐍': { tier: 2, price: 400 },
+    'NFT Надувной круг 🛟': { tier: 2, price: 450 },
+    'NFT Астральный осколок ✨': { tier: 2, price: 500 },
+    'NFT Бриллиантовая корона 👑': { tier: 2, price: 550 },
+    'NFT Плюшевый Пепе 🐸': { tier: 3, price: 1500 },
+    'NFT Кепка Дурова 🧢': { tier: 3, price: 1800 },
+    'NFT Папаха Хабиба 🎩': { tier: 3, price: 2000 },
+    'NFT Желейная лягушка 🍬': { tier: 3, price: 2200 },
+    'NFT Платина ⚪': { tier: 3, price: 2500 },
+    'NFT Кольцо 💍': { tier: 3, price: 2800 },
+    'NFT Снуп Догг 🐶': { tier: 4, price: 5000 },
+    'NFT Бриллиантовое кольцо 💎': { tier: 4, price: 6000 },
+    'NFT Сердечный медальон 💖': { tier: 4, price: 7000 },
+    'NFT Хрустальный шар 🔮': { tier: 4, price: 8000 },
+    'NFT Космический кот 🐱': { tier: 4, price: 9000 },
+    'NFT Огненный череп 💀': { tier: 5, price: 12000 },
+    'NFT Радужный единорог 🦄': { tier: 5, price: 14000 },
+    'NFT Золотой ключ 🗝️': { tier: 5, price: 15000 },
+    'NFT Кристалл TON 💠': { tier: 5, price: 18000 },
+    'NFT Кибер-сова 🦉': { tier: 5, price: 20000 },
+    'NFT Неоновое сердце 💗': { tier: 5, price: 25000 }
+};
+
+const ALL_TARGETS = Object.keys(NFT_TIERS);
+let upgState = { from: [], to: null, busy: false };
+
+function getNftTier(name) {
+    if (NFT_TIERS[name]) return NFT_TIERS[name].tier;
+    const lower = (name || '').toLowerCase();
+    if (lower.includes('золотой') || lower.includes('кристалл') || lower.includes('кибер') || lower.includes('неоновое') || lower.includes('огненный') || lower.includes('радужный')) return 5;
+    if (lower.includes('снуп') || lower.includes('бриллиантовое') || lower.includes('медальон') || lower.includes('хрустальный') || lower.includes('космический')) return 4;
+    if (lower.includes('пепе') || lower.includes('дуров') || lower.includes('хабиб') || lower.includes('желейная') || lower.includes('платина') || lower.includes('кольцо')) return 3;
+    if (lower.includes('змея') || lower.includes('круг') || lower.includes('астральный') || lower.includes('корона')) return 2;
+    return 1;
+}
+
+function getNftPrice(name) {
+    if (NFT_TIERS[name]) return NFT_TIERS[name].price;
+    const tier = getNftTier(name);
+    const prices = { 1: 120, 2: 475, 3: 2100, 4: 6500, 5: 19500 };
+    return prices[tier] || 100;
+}
+
+function getTierEmoji(tier) {
+    const emojis = { 1: '🟫', 2: '⬜', 3: '🟨', 4: '💎', 5: '🔥' };
+    return emojis[tier] || '⬜';
+}
+
+function renderUpgMyItems() {
+    const container = document.getElementById('upg-my-items');
+    if (!container) return;
+    if (!user.nft_inventory || !user.nft_inventory.length) {
+        container.innerHTML = '<p style="grid-column:1/-1;opacity:0.6;font-size:12px;text-align:center;">Пусто. Открой кейс!</p>';
+        return;
+    }
+    container.innerHTML = user.nft_inventory.map((nft, i) => {
+        const img = getNftImage(nft);
+        const selected = upgState.from.includes(i);
+        return `<div class="upg-item ${selected ? 'selected' : ''}" onclick="pickMyItem(${i})">
+            ${selected ? '<div class="check-badge">✓</div>' : ''}
+            ${img ? `<img src="${img}" alt="">` : `<span style="font-size:20px;">${getTierEmoji(getNftTier(nft))}</span>`}
+            ${escapeHtml(nft)}
+        </div>`;
+    }).join('');
+}
+
+function renderUpgTargets() {
+    const container = document.getElementById('upg-target-items');
+    if (!container) return;
+    container.innerHTML = ALL_TARGETS.map(name => {
+        const img = getNftImage(name);
+        const selected = upgState.to === name;
+        return `<div class="upg-item ${selected ? 'selected' : ''}" onclick="pickTarget('${escapeHtml(name)}')">
+            ${img ? `<img src="${img}" alt="">` : `<span style="font-size:20px;">${getTierEmoji(getNftTier(name))}</span>`}
+            ${escapeHtml(name)}
+        </div>`;
+    }).join('');
+}
+
+function pickMyItem(index) {
+    if (upgState.busy) return;
+    const idx = upgState.from.indexOf(index);
+    if (idx === -1) upgState.from.push(index);
+    else upgState.from.splice(idx, 1);
+    renderUpgMyItems();
+    updateUpgChance();
+}
+
+function pickTarget(name) {
+    if (upgState.busy) return;
+    upgState.to = name;
+    renderUpgTargets();
+    updateUpgChance();
+}
+
+function updateUpgChance() {
+    const chanceEl = document.getElementById('upg-chance-display');
+    const btn = document.getElementById('upgrade-btn');
+    const resultBox = document.getElementById('upg-result-box');
+    const stakeInfo = document.getElementById('upg-stake-info');
+    if (!chanceEl) return;
+    if (!upgState.from.length || !upgState.to) {
+        chanceEl.textContent = 'Выбери NFT';
+        chanceEl.className = 'upg-chance';
+        btn.disabled = true;
+        resultBox.textContent = 'Выбери NFT слева и цель справа';
+        resultBox.className = 'upg-result-box';
+        if (stakeInfo) stakeInfo.textContent = '';
+        return;
+    }
+    let totalPrice = 0;
+    upgState.from.forEach(i => { totalPrice += getNftPrice(user.nft_inventory[i]); });
+    const targetPrice = getNftPrice(upgState.to);
+    let chance = (totalPrice / targetPrice) * 100;
+    if (chance > 90) chance = 90;
+    if (chance < 0.5) chance = 0.5;
+    chanceEl.textContent = 'Шанс: ' + chance.toFixed(1) + '%';
+    chanceEl.className = 'upg-chance ' + (chance < 15 ? 'low' : (chance < 40 ? 'ok' : 'high'));
+    btn.disabled = false;
+    resultBox.textContent = `Ставка: ${totalPrice}⭐ → Цель: ${upgState.to} (${targetPrice}⭐)`;
+    resultBox.className = 'upg-result-box';
+    if (stakeInfo) stakeInfo.textContent = `Выбрано NFT: ${upgState.from.length}`;
+}
+
+function doUpgrade() {
+    if (upgState.busy || !upgState.from.length || !upgState.to) return;
+    let totalPrice = 0;
+    upgState.from.forEach(i => { totalPrice += getNftPrice(user.nft_inventory[i]); });
+    const targetPrice = getNftPrice(upgState.to);
+    let chance = (totalPrice / targetPrice) * 100;
+    if (chance > 90) chance = 90;
+    if (chance < 0.5) chance = 0.5;
+    upgState.busy = true;
+    document.getElementById('upgrade-btn').disabled = true;
+    const resultBox = document.getElementById('upg-result-box');
+    resultBox.textContent = '⚡ Крутим...';
+    resultBox.className = 'upg-result-box';
+    let ticks = 0;
+    const interval = setInterval(() => {
+        const randomNft = ALL_TARGETS[Math.floor(Math.random() * ALL_TARGETS.length)];
+        const img = getNftImage(randomNft);
+        resultBox.innerHTML = `🎲 ${img ? `<img src="${img}" style="width:30px;height:30px;vertical-align:middle;">` : ''} ${escapeHtml(randomNft)}`;
+        ticks++;
+        if (ticks >= 12) { clearInterval(interval); finishUpgrade(chance); }
+    }, 80);
+}
+
+function finishUpgrade(chance) {
+    const success = Math.random() * 100 < chance;
+    const resultBox = document.getElementById('upg-result-box');
+    const users = getAllUsers();
+    const currentUser = users[user.id];
+    const staked = upgState.from.map(i => currentUser.nft_inventory[i]).filter(Boolean);
+    // Удаляем по индексам с конца
+    const indices = upgState.from.slice().sort((a,b) => b - a);
+    indices.forEach(i => currentUser.nft_inventory.splice(i, 1));
+    if (success) {
+        currentUser.nft_inventory.push(upgState.to);
+        const img = getNftImage(upgState.to);
+        resultBox.innerHTML = `🎉 УСПЕХ! Получен ${img ? `<img src="${img}" style="width:30px;height:30px;vertical-align:middle;">` : ''} ${escapeHtml(upgState.to)}`;
+        resultBox.className = 'upg-result-box win';
+        addEvent(`⚡ ${currentUser.name} апгрейднул ${staked.length} NFT → ${upgState.to}`);
+    } else {
+        resultBox.textContent = `💥 ПРОВАЛ! ${staked.length} NFT сгорели`;
+        resultBox.className = 'upg-result-box lose';
+        addEvent(`💥 ${currentUser.name} потерял ${staked.length} NFT в апгрейдере`);
+    }
+    user = currentUser;
+    saveAllUsers(users);
+    document.getElementById('balance').textContent = user.balance;
+    updateProfileUI();
+    renderInventory();
+    upgState.from = [];
+    upgState.to = null;
+    upgState.busy = false;
+    renderUpgMyItems();
+    renderUpgTargets();
+    updateUpgChance();
+    document.getElementById('upgrade-btn').disabled = true;
+}
+
+/* ================== PVP ================== */
+let pvpState = { targetId: null, myNfts: [], enemyNfts: [], busy: false };
+
+function renderPvpPlayers() {
+    const container = document.getElementById('pvp-players');
+    if (!container) return;
+    const users = getAllUsers();
+    const others = Object.values(users).filter(u => u.id !== user.id && !u.blocked);
+    if (!others.length) {
+        container.innerHTML = '<p class="empty">Пока нет других игроков.</p>';
+        return;
+    }
+    container.innerHTML = others.map(u => {
+        const selected = pvpState.targetId === u.id;
+        const nftCount = (u.nft_inventory || []).length;
+        const badge = nftCount === 0 ? ' ❌ нет NFT' : ` 🐒 ${nftCount} NFT`;
+        return `<div class="pvp-player ${selected ? 'selected' : ''}" onclick="pickPvpTarget('${u.id}')">
+            <div class="p-name">${escapeHtml(u.name)}</div>
+            <div class="p-user">@${escapeHtml(u.username)}${badge}</div>
+            <div class="p-nfts">💰 ${u.balance} ⭐</div>
+        </div>`;
+    }).join('');
+}
+
+function pickPvpTarget(id) {
+    if (pvpState.busy) return;
+    const users = getAllUsers();
+    const target = users[id];
+    if (!target || !target.nft_inventory || !target.nft_inventory.length) {
+        showModal('❌ Нельзя вызвать', 'У игрока нет NFT для дуэли');
+        return;
+    }
+    pvpState.targetId = id;
+    const shuffled = [...target.nft_inventory].sort(() => Math.random() - 0.5);
+    pvpState.enemyNfts = shuffled.slice(0, Math.min(3, shuffled.length));
+    pvpState.myNfts = [];
+    document.getElementById('pvp-battle-area').classList.remove('hidden');
+    document.getElementById('pvp-result').classList.remove('show');
+    renderPvpPlayers();
+    renderPvpMyNfts();
+    renderPvpPreview();
+}
+
+function renderPvpMyNfts() {
+    const container = document.getElementById('pvp-my-nfts');
+    if (!container) return;
+    if (!user.nft_inventory || !user.nft_inventory.length) {
+        container.innerHTML = '<p style="grid-column:1/-1;opacity:0.6;font-size:12px;text-align:center;">Пусто. Открой кейс!</p>';
+        return;
+    }
+    container.innerHTML = user.nft_inventory.map((nft, i) => {
+        const img = getNftImage(nft);
+        const selected = pvpState.myNfts.includes(i);
+        return `<div class="pvp-nft-pick ${selected ? 'selected' : ''}" onclick="pickPvpMyNft(${i})">
+            ${selected ? '<div class="check-badge">✓</div>' : ''}
+            ${img ? `<img src="${img}" alt="">` : `<span style="font-size:24px;">${getTierEmoji(getNftTier(nft))}</span>`}
+            ${escapeHtml(nft)}
+        </div>`;
+    }).join('');
+}
+
+function pickPvpMyNft(index) {
+    if (pvpState.busy) return;
+    const idx = pvpState.myNfts.indexOf(index);
+    if (idx === -1) pvpState.myNfts.push(index);
+    else pvpState.myNfts.splice(idx, 1);
+    renderPvpMyNfts();
+    renderPvpPreview();
+}
+
+function renderPvpPreview() {
+    const mySlot = document.getElementById('pvp-my-slot');
+    const enemySlot = document.getElementById('pvp-enemy-slot');
+    if (mySlot) {
+        if (pvpState.myNfts.length) {
+            const imgs = pvpState.myNfts.map(i => {
+                const nft = user.nft_inventory[i];
+                const img = getNftImage(nft);
+                return img ? `<img class="pvp-nft-mini" src="${img}" alt="">` : `<div class="pvp-nft-mini" style="display:inline-flex;align-items:center;justify-content:center;">${getTierEmoji(getNftTier(nft))}</div>`;
+            }).join('');
+            mySlot.innerHTML = `<div class="pvp-nft-list">${imgs}</div>`;
+        } else {
+            mySlot.innerHTML = '<div class="pvp-empty">— выбери NFT ниже —</div>';
+        }
+    }
+    if (enemySlot && pvpState.enemyNfts.length) {
+        const imgs = pvpState.enemyNfts.map(nft => {
+            const img = getNftImage(nft);
+            return img ? `<img class="pvp-nft-mini" src="${img}" alt="">` : `<div class="pvp-nft-mini" style="display:inline-flex;align-items:center;justify-content:center;">${getTierEmoji(getNftTier(nft))}</div>`;
+        }).join('');
+        enemySlot.innerHTML = `<div class="pvp-nft-list">${imgs}</div>`;
+    }
+    document.getElementById('pvp-battle-btn').disabled = !pvpState.myNfts.length;
+}
+
+function startPvpBattle() {
+    if (pvpState.busy || !pvpState.myNfts.length || !pvpState.targetId) return;
+    pvpState.busy = true;
+    document.getElementById('pvp-battle-btn').disabled = true;
+    const resultEl = document.getElementById('pvp-result');
+    resultEl.className = 'pvp-result';
+    resultEl.classList.remove('show');
+    let step = 0;
+    const steps = ['⚔️ Готовимся...', '🥊 Бой начался!', '💥 Удар!', '⚡ Ещё удар!', '🔥 Судьба решается...'];
+    const interval = setInterval(() => {
+        resultEl.textContent = steps[step] || '...';
+        resultEl.className = 'pvp-result show';
+        step++;
+        if (step >= steps.length) { clearInterval(interval); setTimeout(finishPvpBattle, 500); }
+    }, 500);
+}
+
+function finishPvpBattle() {
+    const users = getAllUsers();
+    const me = users[user.id];
+    const enemy = users[pvpState.targetId];
+    if (!me || !enemy) return;
+    const stakedMe = pvpState.myNfts.map(i => me.nft_inventory[i]).filter(Boolean);
+    const stakedEnemy = [...pvpState.enemyNfts];
+    const myIdx = pvpState.myNfts.slice().sort((a,b) => b - a);
+    myIdx.forEach(i => me.nft_inventory.splice(i, 1));
+    stakedEnemy.forEach(nft => {
+        const idx = enemy.nft_inventory.indexOf(nft);
+        if (idx !== -1) enemy.nft_inventory.splice(idx, 1);
+    });
+    const iWin = Math.random() < 0.5;
+    const resultEl = document.getElementById('pvp-result');
+    if (iWin) {
+        me.nft_inventory.push(...stakedMe, ...stakedEnemy);
+        resultEl.innerHTML = `🏆 ПОБЕДА! Забрал ${stakedEnemy.length} NFT`;
+        resultEl.className = 'pvp-result show win';
+        addEvent(`⚔️ ${me.name} победил ${enemy.name} в дуэли (+${stakedEnemy.length} NFT)`);
+    } else {
+        enemy.nft_inventory.push(...stakedMe, ...stakedEnemy);
+        resultEl.innerHTML = `💥 ПОРАЖЕНИЕ! Потерял ${stakedMe.length} NFT`;
+        resultEl.className = 'pvp-result show lose';
+        addEvent(`⚔️ ${enemy.name} победил ${me.name} в дуэли (+${stakedMe.length} NFT)`);
+    }
+    users[user.id] = me;
+    users[enemy.id] = enemy;
+    saveAllUsers(users);
+    user = me;
+    document.getElementById('balance').textContent = user.balance;
+    updateProfileUI();
+    renderInventory();
+    renderPvpPlayers();
+    renderPvpMyNfts();
+    pvpState.busy = false;
+    pvpState.myNfts = [];
+    pvpState.enemyNfts = [];
+    pvpState.targetId = null;
+    document.getElementById('pvp-battle-area').classList.add('hidden');
+    document.getElementById('pvp-battle-btn').disabled = true;
+}
+
+/* ================== ПРОМОКОДЫ ================== */
+function activatePromo() {
+    const input = document.getElementById('promo-input');
+    const code = (input.value || '').trim().toUpperCase();
+    if (!code) { showModal('❌ Ошибка', 'Введи промокод'); return; }
+    const promos = getPromos();
+    if (!promos[code]) { showModal('❌ Не найден', 'Такого промокода нет'); return; }
+    if (promos[code].used_by && promos[code].used_by.includes(user.id)) {
+        showModal('❌ Уже использован', 'Ты уже активировал этот промокод');
+        return;
+    }
+    const p = promos[code];
+    let msg = '';
+    if (p.stars > 0) { user.balance += p.stars; msg += `+${p.stars} ⭐\n`; }
+    if (p.nft) { user.nft_inventory.push(p.nft); msg += `NFT: ${p.nft}\n`; }
+    p.used_by = p.used_by || [];
+    p.used_by.push(user.id);
+    savePromos(promos);
+    saveUser();
+    renderInventory();
+    addEvent(`🎟 ${user.name} активировал промокод ${code}`);
+    showModal('🎉 Промокод активирован!', msg.trim());
+    input.value = '';
+}
+
+function createPromo() {
+    const code = (document.getElementById('promo-new-code').value || '').trim().toUpperCase();
+    const stars = parseInt(document.getElementById('promo-new-stars').value) || 0;
+    const nft = (document.getElementById('promo-new-nft').value || '').trim();
+    if (!code || code.length < 3) { showModal('❌ Ошибка', 'Код минимум 3 символа'); return; }
+    if (!stars && !nft) { showModal('❌ Ошибка', 'Укажи звёзды или NFT'); return; }
+    const promos = getPromos();
+    if (promos[code]) { showModal('❌ Ошибка', 'Такой код уже есть'); return; }
+    promos[code] = { stars: stars, nft: nft, used_by: [], created: Date.now() };
+    savePromos(promos);
+    document.getElementById('promo-new-code').value = '';
+    document.getElementById('promo-new-stars').value = '';
+    document.getElementById('promo-new-nft').value = '';
+    renderAdminPromos();
+    showModal('✅ Промокод создан', `Код: ${code}\nЗвёзды: ${stars}\nNFT: ${nft || '—'}`);
+}
+
+function renderAdminPromos() {
+    const container = document.getElementById('admin-promos');
+    if (!container) return;
+    const promos = getPromos();
+    const list = Object.entries(promos).sort((a, b) => (b[1].created || 0) - (a[1].created || 0));
+    if (!list.length) { container.innerHTML = '<p class="empty" style="margin-bottom:15px;">Промокодов нет</p>'; return; }
+    container.innerHTML = list.map(([code, p]) => `
+        <div class="admin-user">
+            <div class="admin-user-info">
+                <b>🎟 ${escapeHtml(code)}</b><br>
+                ⭐ ${p.stars || 0} · 🐒 ${p.nft ? escapeHtml(p.nft) : '—'}
+                <small>Использован: ${(p.used_by || []).length} раз</small>
+            </div>
+            <div class="admin-actions">
+                <button class="admin-btn block" onclick="deletePromo('${escapeHtml(code)}')">🗑</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function deletePromo(code) {
+    if (!confirm('Удалить промокод ' + code + '?')) return;
+    const promos = getPromos();
+    delete promos[code];
+    savePromos(promos);
+    renderAdminPromos();
+}
+
+/* ================== АДМИН: ПОДКРУТКА ШАНСОВ ================== */
+function renderLuckControls() {
+    const container = document.getElementById('luck-controls');
+    if (!container) return;
+    const luck = getLuck();
+    container.innerHTML = Object.keys(CASES).map(key => {
+        const val = luck[key] || 0;
+        return `<div style="margin-bottom:12px;">
+            <div style="font-size:13px;margin-bottom:5px;">${CASES[key].name} — бонус к шансу NFT: <b style="color:#ff8a00;">+${val}%</b></div>
+            <input type="range" min="0" max="200" value="${val}" style="width:100%;" oninput="updateLuck('${key}', this.value)">
+        </div>`;
+    }).join('');
+}
+
+function updateLuck(key, val) {
+    const luck = getLuck();
+    luck[key] = parseInt(val);
+    saveLuck(luck);
+    renderLuckControls();
+}
+
+/* ================== НАВИГАЦИЯ ================== */
+function showSection(name) {
+    document.getElementById('view-main').classList.add('hidden');
+    document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
+    if (name === 'main') { document.getElementById('view-main').classList.remove('hidden'); return; }
+    const section = document.getElementById('section-' + name);
+    if (section) section.classList.remove('hidden');
+    if (name === 'profile') updateProfileUI();
+    if (name === 'upgrade') {
+        upgState = { from: [], to: null, busy: false };
+        renderUpgMyItems();
+        renderUpgTargets();
+        updateUpgChance();
+    }
+    if (name === 'pvp') {
+        pvpState = { targetId: null, myNfts: [], enemyNfts: [], busy: false };
+        document.getElementById('pvp-battle-area').classList.add('hidden');
+        renderPvpPlayers();
+    }
+    if (name === 'admin') {
+        if (user.role !== 'admin') {
+            showModal('🚫 Доступ запрещён', 'Только для админов');
+            document.getElementById('view-main').classList.remove('hidden');
+            return;
+        }
+        renderAdminPanel();
+    }
+}
+
+function showModal(title, text, nftName) {
+    document.getElementById('result-title').textContent = title;
+    document.getElementById('result-text').textContent = text;
+    const imgBox = document.getElementById('result-image');
+    if (nftName) {
+        const img = getNftImage(nftName);
+        imgBox.innerHTML = img ? `<img src="${img}" alt="">` : '';
+    } else {
+        imgBox.innerHTML = '';
+    }
+    document.getElementById('result-modal').classList.remove('hidden');
+}
+function closeModal() { document.getElementById('result-modal').classList.add('hidden'); }
+
+document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('modal-close-btn');
+    if (btn) btn.addEventListener('click', closeModal);
+    const modal = document.getElementById('result-modal');
+    if (modal) modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+
+function renderInventory() {
+    const list = document.getElementById('inventory-list');
+    if (!list || !user) return;
+    if (!user.nft_inventory || !user.nft_inventory.length) {
+        list.innerHTML = '<p class="empty">Инвентарь пуст. Открывай кейсы!</p>';
+        return;
+    }
+    list.innerHTML = user.nft_inventory.map(nft => {
+        const tier = getNftTier(nft);
+        const img = getNftImage(nft);
+        return `<div class="inventory-item tier${tier}">
+            ${img ? `<img src="${img}" alt="">` : `<div style="font-size:50px;">${getTierEmoji(tier)}</div>`}
+            <div class="nft-name">${escapeHtml(nft)}</div>
+        </div>`;
+    }).join('');
+}
+
+function escapeHtml(s) {
+    return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ================== АДМИН-ПАНЕЛЬ ================== */
+function renderAdminPanel() {
+    const users = getAllUsers();
+    const list = Object.values(users);
+    document.getElementById('admin-total').textContent = list.length;
+    document.getElementById('admin-stars').textContent = list.reduce((s, u) => s + (u.balance || 0), 0);
+    document.getElementById('admin-nfts').textContent = list.reduce((s, u) => s + ((u.nft_inventory || []).length), 0);
+    renderLuckControls();
+    renderAdminPromos();
+    renderAdminUsers();
+}
+
+function renderAdminUsers() {
+    const search = (document.getElementById('admin-search')?.value || '').toLowerCase();
+    const allUsers = getAllUsers();
+    let list = Object.values(allUsers);
+    if (search) {
+        list = list.filter(u =>
+            (u.name || '').toLowerCase().includes(search) ||
+            (u.username || '').toLowerCase().includes(search) ||
+            (u.id || '').toLowerCase().includes(search)
+        );
+    }
+    list.sort((a, b) => (b.created || 0) - (a.created || 0));
+    const container = document.getElementById('admin-users');
+    if (!container) return;
+    if (!list.length) { container.innerHTML = '<p class="empty">Пользователи не найдены</p>'; return; }
+    container.innerHTML = list.map(u => `
+        <div class="admin-user">
+            <div class="admin-user-info">
+                <b>${escapeHtml(u.name)}</b> @${escapeHtml(u.username)}
+                ${u.role === 'admin' ? ' 🛠' : ''}
+                ${u.blocked ? ' 🚫' : ''}<br>
+                💰 ${u.balance || 0} ⭐ · 🐒 ${(u.nft_inventory || []).length} NFT · 📦 ${u.cases_opened || 0}
+                <small>ID: ${u.id} ${u.id === currentUserId ? '(ты)' : ''}</small>
+            </div>
+            <div class="admin-actions">
+                <button class="admin-btn give" onclick="adminGive('${u.id}')">+⭐</button>
+                <button class="admin-btn take" onclick="adminTake('${u.id}')">-⭐</button>
+                <button class="admin-btn nft" onclick="adminGiveNft('${u.id}')">+🐒</button>
+                <button class="admin-btn block" onclick="adminToggleBlock('${u.id}')">${u.blocked ? '✅' : '🚫'}</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function adminGive(id) {
+    const amount = parseInt(prompt('Сколько звёзд выдать?', '100'));
+    if (!amount || amount <= 0) return;
+    const users = getAllUsers();
+    users[id].balance = (users[id].balance || 0) + amount;
+    saveAllUsers(users);
+    if (id === currentUserId) { user = users[id]; saveUser(); }
+    renderAdminPanel();
+}
+function adminTake(id) {
+    const amount = parseInt(prompt('Сколько звёзд снять?', '100'));
+    if (!amount || amount <= 0) return;
+    const users = getAllUsers();
+    users[id].balance = Math.max(0, (users[id].balance || 0) - amount);
+    saveAllUsers(users);
+    if (id === currentUserId) { user = users[id]; saveUser(); }
+    renderAdminPanel();
+}
+function adminGiveNft(id) {
+    const name = prompt('Название NFT?', 'NFT Сердце 💌');
+    if (!name) return;
+    const users = getAllUsers();
+    users[id].nft_inventory = users[id].nft_inventory || [];
+    users[id].nft_inventory.push(name);
+    saveAllUsers(users);
+    if (id === currentUserId) { user = users[id]; saveUser(); }
+    renderAdminPanel();
+}
+function adminToggleBlock(id) {
+    const users = getAllUsers();
+    users[id].blocked = !users[id].blocked;
+    saveAllUsers(users);
+    if (id === currentUserId) { user = users[id]; saveUser(); }
+    renderAdminPanel();
+}
+
+/* ================== ИНИЦИАЛИЗАЦИЯ ================== */
+function initApp() {
+    document.getElementById('balance').textContent = user.balance;
+    updateProfileUI();
+    renderInventory();
+    renderEvents();
+    renderCases();
+}
+
+(function start() {
+    const savedId = localStorage.getItem(CURRENT_KEY);
+    if (savedId) {
+        const users = getAllUsers();
+        if (users[savedId] && !users[savedId].blocked) {
+            user = users[savedId];
+            currentUserId = savedId;
+            document.getElementById('auth-overlay').classList.add('hidden');
+            document.getElementById('app').classList.remove('hidden');
+            initApp();
+            return;
+        } else {
+            localStorage.removeItem(CURRENT_KEY);
+        }
+    }
+    document.getElementById('auth-overlay').classList.remove('hidden');
+})();
+</script>
+</body>
+</html>
 <body>                              
